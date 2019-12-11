@@ -116,15 +116,51 @@ def photoInfo(photoID):
 
     return render_template("photoInfo.html", photoID=photoID, photo=picture, name=names, tagged=names_tagged, likes=likes)
 
+@app.route("/follow", methods=["GET"])
+def follow():
+    to_follow = request.args.get("username")
+    follower = session["username"]
+    sent=False
+    if to_follow != None:
+        #query to insert pending follow request
+        cursor = connection.cursor()
+        query = "INSERT INTO `Follow` (`username_followed`, `username_follower`, `followstatus`) VALUES ('"+str(to_follow)+"', '"+str(follower)+"', '0');"
+        cursor.execute(query)
+        cursor.close()
+        sent=True
+
+    return render_template("follow.html", request_sent=sent)
+
+@app.route("/followRequests", methods=["GET"])
+def followers():
+    user = session["username"]
+
+    #query to get list of follower requests
+    cursor = connection.cursor()
+    query = "SELECT username_follower FROM Follow WHERE username_followed='"+str(user)+"' AND followstatus=0"
+    cursor.execute(query)
+    followers=cursor.fetchall()
+    cursor.close()
+
+    return render_template("followRequests.html", followers=followers)
+
+def accept_follow():
+    user = session["username"]
+    #query to update the follow status to true
+    cursor = connection.cursor()
+    query = "UPDATE `Follow` SET `followstatus` = '1' WHERE `Follow`.`username_followed` = 'bobby' AND `Follow`.`username_follower` = 'colieen';"
+    cursor.execute(query)
+    cursor.close()
+
+
+def decline_follow():
+    pass
 @app.route("/image/<image_name>", methods=["GET"])
 def image(image_name):
     image_location = os.path.join(IMAGES_DIR, image_name)
     if os.path.isfile(image_location):
         return send_file(image_location, mimetype="image/jpg")
 
-@app.route("/login", methods=["GET"])
-def login():
-    return render_template("login.html")
 
 @app.route("/register", methods=["GET"])
 def register():

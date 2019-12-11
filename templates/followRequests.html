@@ -1,0 +1,15 @@
+<html>
+    <head>
+        <title>Followers</title>
+    </head>
+    <body>
+        <h1>Accept or decline these follow requests</h1>
+        {% for follower in followers %}
+        <div>
+          {{follower.username_follower}} <input type = "button" onclick = "accept_follow()" value = "Accept Follow" /><button type="button" onclick="accept_follow()">Accept</button> <button type="button" onclick=""decline_follow()">Decline</button>
+
+        </div>
+        {% endfor %}
+        {{hello}}
+    </body>
+</html>

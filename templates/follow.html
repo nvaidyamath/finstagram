@@ -1,0 +1,19 @@
+<html>
+    <head>
+        <title>Follow</title>
+    </head>
+    <body>
+        <h1>Follow your friends!</h1>
+        <div>
+          Enter the user name of your friend's account
+        </div>
+        <form>
+          username: <input type="text" name="username" ><br>
+          <input type="submit" value="Submit" >
+        </form>
+        <div>
+          {% if request_sent == True %}Follow request sent!{% endif %}
+        </div>
+
+    </body>
+</html>
