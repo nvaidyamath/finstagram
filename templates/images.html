@@ -7,9 +7,13 @@
     <h1>Image Gallery</h1>
     <div>
       {% for image in images %}
+      <h1>
+        <a href="/photoInfo/{{ image.photoID }}">Look at photo details</a>
+      </h1>
       <h1>Photo ID: {{ image.photoID }}</h1>
       <h1>Photo Poster:{{ image.photoPoster }}</h1>
-      <img src="/image/{{ image.filepath }}" width="300" /> {% endfor %}
+      <img src="/image/{{ image.filepath }}" width="300" />
+      {% endfor %}
     </div>
     <a href="/">Go back</a>
   </body>

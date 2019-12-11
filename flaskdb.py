@@ -15,7 +15,7 @@ connection = pymysql.connect(host='localhost',
                              port=8889,
                              user='root',
                              password='root',
-                             db='Finstagram',
+                             db='instagram',
                              charset='utf8mb4',
                              cursorclass=pymysql.cursors.DictCursor,
                              autocommit=True)
@@ -42,6 +42,7 @@ def home():
 @app.route("/upload", methods=["GET"])
 @login_required
 def upload():
+
     return render_template("upload.html")
 
 @app.route("/images", methods=["GET"])
@@ -72,6 +73,48 @@ def images():
     cursor.close()
     return render_template("images.html",images=data)
 
+@app.route("/photoInfo/<int:photoID>", methods=["GET"])
+def photoInfo(photoID):
+    profile = session["username"]
+
+    #query to get the picture details
+    cursor = connection.cursor()
+    query = "SELECT * FROM PHOTO WHERE photoID="+str(photoID)
+    cursor.execute(query)
+    picture=cursor.fetchall()
+    cursor.close()
+
+
+    #query to get the posters name
+    cursor = connection.cursor()
+    query = "SELECT photoPoster FROM PHOTO WHERE photoID="+str(photoID)
+    cursor.execute(query)
+    name=cursor.fetchall()[0]["photoPoster"]
+    cursor.close()
+
+
+    #query to get the first and last name
+    cursor = connection.cursor()
+    query = "SELECT fname, lname FROM Person WHERE username="+"'"+(name)+"'"
+    cursor.execute(query)
+    names=cursor.fetchall()[0]
+    cursor.close()
+
+    #query to get all tagged
+    cursor = connection.cursor()
+    query = "SELECT fname, lname FROM Person NATURAL JOIN Tagged NATURAL JOIN Photo WHERE photoID="+str(photoID)+" AND tagstatus=1"
+    cursor.execute(query)
+    names_tagged=cursor.fetchall()
+    cursor.close()
+
+    #query to get all likes for this photo
+    cursor = connection.cursor()
+    query = "SELECT fname, lname, rating FROM Person NATURAL JOIN Likes NATURAL JOIN Photo WHERE photoID="+str(photoID)
+    cursor.execute(query)
+    likes=cursor.fetchall()
+    cursor.close()
+
+    return render_template("photoInfo.html", photoID=photoID, photo=picture, name=names, tagged=names_tagged, likes=likes)
 
 @app.route("/image/<image_name>", methods=["GET"])
 def image(image_name):
@@ -87,6 +130,7 @@ def login():
 def register():
     return render_template("register.html")
 
+
 @app.route("/loginAuth", methods=["POST"])
 def loginAuth():
     if request.form:
@@ -94,7 +138,7 @@ def loginAuth():
         username = requestData["username"]
         plaintextPasword = requestData["password"]
         hashedPassword = hashlib.sha256(plaintextPasword.encode("utf-8")).hexdigest()
-        #hashedPassword = plaintextPasword
+        hashedPassword = plaintextPasword
         with connection.cursor() as cursor:
             query = "SELECT * FROM person WHERE username = %s AND password = %s"
             cursor.execute(query, (username, hashedPassword))

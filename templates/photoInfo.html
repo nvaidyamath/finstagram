@@ -1,0 +1,28 @@
+<html>
+
+  <body>
+    <h1>Hello</h1>
+    <div>
+      <h1>Posted by: {{ name.fname }} {{name.lname}}</h1>
+      <h1>At: {{ photo[0].postingdate }}</h1>
+      <img src="/image/{{ photo[0].filepath}}" width="300" />
+      <h1>People tagged:
+        {% for tag in tagged %}
+        {{tag.fname}} {{tag.lname}}
+        {% endfor %}
+      </h1>
+      <h1>Likes: </h1>
+
+        {% for like in likes %}
+        <h1>
+        {{like.fname}} {{like.lname}}
+        gave a rating of : {{like.rating}}
+        </h1>
+        {% endfor %}
+
+
+
+    </div>
+    <a href="/">Go back</a>
+  </body>
+</html>
