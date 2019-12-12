@@ -12,6 +12,13 @@
       </h1>
       <h1>Photo ID: {{ image.photoID }}</h1>
       <h1>Photo Poster:{{ image.photoPoster }}</h1>
+      <form action="/like" method="post">
+              <input type="text" name="rate" placeholder="rate from 0 - 5" required/>
+              <button type="submit" name="photoID" value="{{image.photoID}}">Like</button>
+      </form>
+      {% if error %}
+          {{ error }}
+      {% endif %}
       <img src="/image/{{ image.filepath }}" width="300" />
       {% endfor %}
     </div>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for, send_file
+from flask import Flask, flash, render_template, request, session, redirect, url_for, send_file
 import os
 import uuid
 import hashlib
@@ -7,9 +7,9 @@ from functools import wraps
 import time
 
 app = Flask(__name__)
-#IMAGES_DIR = '/Users/nikhilvaidyamath/Desktop/projectdbpract/images' (For testing purposes)
+IMAGES_DIR = '/Users/nikhilvaidyamath/Desktop/gitFinstagram/finstagram/images/' #(For testing purposes)
 app.secret_key = "super secret key"
-IMAGES_DIR = os.path.join(os.getcwd(), "images")
+#IMAGES_DIR = os.path.join(os.getcwd(), "images")
 
 connection = pymysql.connect(host='localhost',
                              port=8889,
@@ -28,6 +28,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return dec
 
+
 @app.route("/")
 def index():
     if "username" in session:
@@ -42,8 +43,39 @@ def home():
 @app.route("/upload", methods=["GET"])
 @login_required
 def upload():
-
     return render_template("upload.html")
+
+@app.route("/like", methods=["GET","POST"])
+@login_required
+def like():
+    if request.form:
+        requestData = request.form
+        profile = session["username"]
+        photoID = requestData["photoID"]
+        rating = requestData["rate"]
+        if rating not in ["0","1","2","3","4","5"]: #make sure that rating is between 0-5
+            flash("Rating must be an integer between 0 and 5")
+            return redirect(url_for('images'))
+        query = "SELECT DISTINCT username,photoID FROM likes WHERE username=%s AND photoID=%s"
+        with connection.cursor() as cursor:
+            cursor.execute(query,(profile,photoID))
+            data = cursor.fetchall()
+            cursor.close()
+        if len(data)!=0:
+            query = "DELETE FROM likes WHERE username=%s AND photoID=%s"
+            with connection.cursor() as cursor:
+                cursor.execute(query, (profile, photoID))
+            query = "INSERT INTO likes (username, photoID, liketime, rating) VALUES (%s, %s, %s, %s)"
+            with connection.cursor() as cursor:
+                cursor.execute(query, (profile, photoID, time.strftime('%Y-%m-%d %H:%M:%S'), rating))
+            return redirect(url_for('images'))
+        else:
+            query = "INSERT INTO likes (username, photoID, liketime, rating) VALUES (%s, %s, %s, %s)"
+            with connection.cursor() as cursor:
+                cursor.execute(query, (profile, photoID, time.strftime('%Y-%m-%d %H:%M:%S'), rating))
+            return redirect(url_for('images'))
+
+    return render_template("images.html", profile=session["username"])
 
 @app.route("/images", methods=["GET"])
 @login_required
@@ -144,6 +176,38 @@ def follow():
         not_found="User not found"
 
     return render_template("follow.html", request_sent=sent, error=not_found, to_follow=to_follow)
+
+@app.route("/search", methods=["GET"])
+def search():
+    searchPoster = request.args.get("username")
+    profile = session["username"]
+    sent=False
+    data = None
+    if searchPoster != None:
+        #query to insert pending follow request
+
+        cursor = connection.cursor()
+        myFollowersQuery = "CREATE VIEW myFollowers AS SELECT DISTINCT photoID, postingdate, filepath, allFollowers, caption, photoPoster FROM photo JOIN follow ON (photo.photoPoster=username_followed) WHERE username_follower=%s AND allFollowers=1"
+        cursor.execute(myFollowersQuery, (profile))
+        cursor.close()
+        #queries for profile's close friend groups
+        cursor = connection.cursor()
+        myCloseGroupsQuery = "CREATE VIEW myCloseGroups AS SELECT DISTINCT photoID, postingdate, filepath, allFollowers, caption, photoPoster FROM photo NATURAL JOIN sharedwith NATURAL JOIN belongto WHERE member_username=%s"
+        cursor.execute(myCloseGroupsQuery, (profile))
+        cursor.close()
+         #sorts the Query in descending order
+        cursor = connection.cursor()
+
+        totalQuery = "SELECT * FROM myCloseGroups WHERE photoPoster ='"+str(searchPoster)+"'UNION (SELECT * FROM myFollowers WHERE photoPoster ='"+str(searchPoster)+"')  ORDER BY postingdate DESC"
+        print(totalQuery)
+        cursor.execute(totalQuery)
+        data = cursor.fetchall()
+        query = "DROP VIEW myCloseGroups, myFollowers"
+        cursor.execute(query)
+        cursor.close()
+        sent=True
+    return render_template("search.html", request_sent=sent,images=data)
+
 
 @app.route("/followRequests", methods=["GET"])
 @login_required
@@ -277,6 +341,6 @@ def upload_image():
 
 app.secret_key = "super secret key"
 if __name__ == "__main__":
-    if not os.path.isdir("images"):
-        os.mkdir(IMAGES_DIR)
+    # if not os.path.isdir("images"):
+    #     os.mkdir(IMAGES_DIR)
     app.run('127.0.0.1', 5000, debug = True)
