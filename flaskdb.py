@@ -177,6 +177,43 @@ def follow():
 
     return render_template("follow.html", request_sent=sent, error=not_found, to_follow=to_follow)
 
+@app.route("/unfollow", methods=["GET"])
+@login_required
+def unfollow():
+    to_follow = request.args.get("username")
+    follower = session["username"]
+    sent=False
+    #query to get list of Users
+    cursor = connection.cursor()
+    query = "SELECT username FROM Person;"
+    cursor.execute(query)
+    users=cursor.fetchall()
+    cursor.close()
+    users_list=[]
+    for users in users:
+        users_list.append(users['username'])
+    not_found=""
+    #query to get list of people you follow
+    cursor = connection.cursor()
+    query = "SELECT username_followed FROM Follow WHERE `username_follower`='"+str(follower)+"';"
+    cursor.execute(query)
+    followed=cursor.fetchall()
+    cursor.close()
+    followed_list=[]
+    for follow in followed:
+        followed_list.append(follow['username_followed'])
+    if to_follow != None and to_follow in users_list and to_follow in followed_list:
+        #query to insert pending follow request
+        cursor = connection.cursor()
+        query = "DELETE FROM `Follow` WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"'"
+        cursor.execute(query)
+        cursor.close()
+        sent=True
+    elif to_follow not in users:
+        not_found="User not found"
+
+    return render_template("Unfollow.html", request_sent=sent, error=not_found, to_follow=to_follow)
+
 @app.route("/search", methods=["GET"])
 def search():
     searchPoster = request.args.get("username")

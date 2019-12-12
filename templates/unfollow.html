@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <title>Unfollow</title>
+    </head>
+    <body>
+        <h1>Unfollow undesired people</h1>
+        <div>
+          Enter the user name of the person you wish to unfollow
+        </div>
+        <form>
+          username: <input type="text" name="username" ><br>
+          <input type="submit" value="Submit" >
+        </form>
+        <div>
+          {% if request_sent == True %}
+          Unfollowed!
+          {% endif %}
+          {% if error!="" and to_follow!=None %}
+          {{error}}
+          {% endif %}
+        </div>
+
+    </body>
+</html>
