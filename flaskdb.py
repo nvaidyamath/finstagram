@@ -74,6 +74,7 @@ def images():
     return render_template("images.html",images=data)
 
 @app.route("/photoInfo/<int:photoID>", methods=["GET"])
+@login_required
 def photoInfo(photoID):
     profile = session["username"]
 
@@ -117,24 +118,38 @@ def photoInfo(photoID):
     return render_template("photoInfo.html", photoID=photoID, photo=picture, name=names, tagged=names_tagged, likes=likes)
 
 @app.route("/follow", methods=["GET"])
+@login_required
 def follow():
     to_follow = request.args.get("username")
     follower = session["username"]
     sent=False
-    if to_follow != None:
+    #query to get list of Users
+    cursor = connection.cursor()
+    query = "SELECT username FROM Person;"
+    cursor.execute(query)
+    users=cursor.fetchall()
+    cursor.close()
+    users_list=[]
+    for users in users:
+        users_list.append(users['username'])
+    not_found=""
+    if to_follow != None and to_follow in users_list:
         #query to insert pending follow request
         cursor = connection.cursor()
         query = "INSERT INTO `Follow` (`username_followed`, `username_follower`, `followstatus`) VALUES ('"+str(to_follow)+"', '"+str(follower)+"', '0');"
         cursor.execute(query)
         cursor.close()
         sent=True
+    elif to_follow not in users:
+        not_found="User not found"
 
-    return render_template("follow.html", request_sent=sent)
+    return render_template("follow.html", request_sent=sent, error=not_found, to_follow=to_follow)
 
 @app.route("/followRequests", methods=["GET"])
+@login_required
 def followers():
     user = session["username"]
-
+    req=request.form
     #query to get list of follower requests
     cursor = connection.cursor()
     query = "SELECT username_follower FROM Follow WHERE username_followed='"+str(user)+"' AND followstatus=0"
@@ -144,13 +159,28 @@ def followers():
 
     return render_template("followRequests.html", followers=followers)
 
+@app.route("/acceptFollow", methods=["POST"])
+@login_required
 def accept_follow():
-    user = session["username"]
-    #query to update the follow status to true
-    cursor = connection.cursor()
-    query = "UPDATE `Follow` SET `followstatus` = '1' WHERE `Follow`.`username_followed` = 'bobby' AND `Follow`.`username_follower` = 'colieen';"
-    cursor.execute(query)
-    cursor.close()
+    user=session["username"]
+    requestData=request.form
+    to_follow=user
+    if requestData:
+        if "accept" in requestData:
+            follower=requestData["accept"]
+            #query to update the following status
+            cursor = connection.cursor()
+            query = "UPDATE `Follow` SET `followstatus` = '1' WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"';"
+            cursor.execute(query)
+            cursor.close()
+        elif "decline" in requestData:
+            follower=requestData["decline"]
+            cursor = connection.cursor()
+            query="DELETE FROM `Follow` WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"';"
+            cursor.execute(query)
+            cursor.close()
+
+    return redirect("http://127.0.0.1:5000/followRequests")
 
 
 def decline_follow():
@@ -216,6 +246,10 @@ def registerAuth():
 def logout():
     session.pop("username")
     return redirect("/")
+
+@app.route("/login", methods=["GET"])
+def login():
+    return render_template("login.html")
 
 @app.route("/uploadImage", methods=["POST"])
 @login_required

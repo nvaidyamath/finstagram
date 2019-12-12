@@ -12,7 +12,13 @@
           <input type="submit" value="Submit" >
         </form>
         <div>
-          {% if request_sent == True %}Follow request sent!{% endif %}
+          {% if request_sent == True %}
+          Follow request has been sent!
+          {% endif %}
+          {% if error!="" and to_follow!=None %}
+          {{error}}
+          {% endif %}
+
         </div>
 
     </body>

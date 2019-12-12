@@ -4,12 +4,20 @@
     </head>
     <body>
         <h1>Accept or decline these follow requests</h1>
+        {{req}}
         {% for follower in followers %}
         <div>
-          {{follower.username_follower}} <input type = "button" onclick = "accept_follow()" value = "Accept Follow" /><button type="button" onclick="accept_follow()">Accept</button> <button type="button" onclick=""decline_follow()">Decline</button>
+
+
+          <form action="/acceptFollow" method="POST">
+            {{follower.username_follower}}
+            <button type="submit"method="post" name="accept" value="{{follower.username_follower}}"> Accept </button>
+            <button type="submit"method="post" name="decline" value="{{follower.username_follower}}"> Decline </button>
+          </form>
 
         </div>
         {% endfor %}
-        {{hello}}
+
+        {{requests}}
     </body>
 </html>
