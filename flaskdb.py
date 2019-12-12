@@ -173,18 +173,19 @@ def accept_follow():
             query = "UPDATE `Follow` SET `followstatus` = '1' WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"';"
             cursor.execute(query)
             cursor.close()
+            return redirect(url_for('followers'))
         elif "decline" in requestData:
             follower=requestData["decline"]
             cursor = connection.cursor()
             query="DELETE FROM `Follow` WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"';"
             cursor.execute(query)
             cursor.close()
+            return redirect(url_for('followers'))
 
-    return redirect("http://127.0.0.1:5000/followRequests")
+
+    return render_template("followRequests.html")
 
 
-def decline_follow():
-    pass
 @app.route("/image/<image_name>", methods=["GET"])
 def image(image_name):
     image_location = os.path.join(IMAGES_DIR, image_name)
