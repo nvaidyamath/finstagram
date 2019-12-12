@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <title>Search</title>
+    </head>
+    <body>
+        <h1>Search by Poster!</h1>
+        <div>
+          Enter the username
+        </div>
+        <form>
+          username: <input type="text" name="username" ><br>
+          <input type="submit" value="Submit" >
+        </form>
+        <div>
+          {% if request_sent == True %}
+            {% if images %}
+              <h1>Photo Poster: {{ images[0].photoPoster }}</h1>
+              {% for image in images %}
+              <h1>Photo ID: {{ image.photoID }}</h1>
+              {% if error %}
+                  {{ error }}
+              {% endif %}
+              <img src="/image/{{ image.filepath }}" width="300" />
+              {% endfor %}
+            {% else %}
+                <h1>Photo Poster does not exist or has not photos!</h1>
+            {% endif %}
+          {% endif %}
+          </div>
+        </div>
+
+    </body>
+</html>
