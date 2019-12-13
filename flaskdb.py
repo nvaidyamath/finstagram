@@ -7,7 +7,7 @@ from functools import wraps
 import time
 
 app = Flask(__name__)
-IMAGES_DIR = '/Users/nikhilvaidyamath/Desktop/gitFinstagram/finstagram/images/' #(For testing purposes)
+IMAGES_DIR = '/Users/angiebeck/Documents/DataBaseProject/finsta2/finstagram/images/' #(For testing purposes)
 app.secret_key = "super secret key"
 #IMAGES_DIR = os.path.join(os.getcwd(), "images")
 
@@ -15,7 +15,7 @@ connection = pymysql.connect(host='localhost',
                              port=8889,
                              user='root',
                              password='root',
-                             db='instagram',
+                             db='finstagram',
                              charset='utf8mb4',
                              cursorclass=pymysql.cursors.DictCursor,
                              autocommit=True)
@@ -108,27 +108,14 @@ def like():
 def images():
     profile = session["username"]
     cursor = connection.cursor()
-    #queries for profile's followers
-    myFollowersQuery = "CREATE VIEW myFollowers AS SELECT DISTINCT photoID, postingdate, filepath, allFollowers, caption, photoPoster FROM photo JOIN follow ON (photo.photoPoster=username_followed) WHERE username_follower=%s AND allFollowers=1"
-    cursor.execute(myFollowersQuery, (profile))
-    cursor.close()
-    #queries for profile's close friend groups
+
+    #queries for pics
     cursor = connection.cursor()
-    myCloseGroupsQuery = "CREATE VIEW myCloseGroups AS SELECT DISTINCT photoID, postingdate, filepath, allFollowers, caption, photoPoster FROM photo NATURAL JOIN sharedwith NATURAL JOIN belongto WHERE member_username=%s"
-    cursor.execute(myCloseGroupsQuery, (profile))
-    cursor.close()
-     #sorts the Query in descending order
-    cursor = connection.cursor()
-    totalQuery = "SELECT * FROM myCloseGroups UNION (SELECT * FROM myFollowers) ORDER BY postingdate DESC"
-    cursor.execute(totalQuery)
-    data = cursor.fetchall()
+    query = "SELECT * FROM Photo WHERE (photoPoster IN (SELECT owner_username FROM belongto WHERE member_username = '"+str(profile)+"')) OR (allFollowers=1 AND photoPoster IN (SELECT username_followed FROM Follow WHERE username_follower='"+str(profile)+"' AND followstatus=1)) ORDER BY postingdate DESC;"
+    cursor.execute(query)
+    data=cursor.fetchall()
     cursor.close()
 
-    cursor = connection.cursor()
-    #drop view  query
-    query = "DROP VIEW myCloseGroups, myFollowers"
-    cursor.execute(query)
-    cursor.close()
 
     return render_template("images.html",images=data)
 
@@ -155,21 +142,21 @@ def photoInfo(photoID):
 
     #query to get the first and last name
     cursor = connection.cursor()
-    query = "SELECT fname, lname FROM Person WHERE username="+"'"+(name)+"'"
+    query = "SELECT firstName, lastName FROM Person WHERE username="+"'"+(name)+"'"
     cursor.execute(query)
     names=cursor.fetchall()[0]
     cursor.close()
 
     #query to get all tagged
     cursor = connection.cursor()
-    query = "SELECT fname, lname FROM Person NATURAL JOIN Tagged NATURAL JOIN Photo WHERE photoID="+str(photoID)+" AND tagstatus=1"
+    query = "SELECT firstName, lastName FROM Person NATURAL JOIN Tagged NATURAL JOIN Photo WHERE photoID="+str(photoID)+" AND tagstatus=1"
     cursor.execute(query)
     names_tagged=cursor.fetchall()
     cursor.close()
 
     #query to get all likes for this photo
     cursor = connection.cursor()
-    query = "SELECT fname, lname, rating FROM Person NATURAL JOIN Likes NATURAL JOIN Photo WHERE photoID="+str(photoID)
+    query = "SELECT firstName, lastName, rating FROM Person NATURAL JOIN Likes NATURAL JOIN Photo WHERE photoID="+str(photoID)
     cursor.execute(query)
     likes=cursor.fetchall()
     cursor.close()
@@ -267,9 +254,10 @@ def search():
         myCloseGroupsQuery = "CREATE VIEW myCloseGroups AS SELECT DISTINCT photoID, postingdate, filepath, allFollowers, caption, photoPoster FROM photo NATURAL JOIN sharedwith NATURAL JOIN belongto WHERE member_username=%s"
         cursor.execute(myCloseGroupsQuery, (profile))
         cursor.close()
+
+
          #sorts the Query in descending order
         cursor = connection.cursor()
-
         totalQuery = "SELECT * FROM myCloseGroups WHERE photoPoster ='"+str(searchPoster)+"'UNION (SELECT * FROM myFollowers WHERE photoPoster ='"+str(searchPoster)+"')  ORDER BY postingdate DESC"
         print(totalQuery)
         cursor.execute(totalQuery)
@@ -363,12 +351,12 @@ def registerAuth():
         username = requestData["username"]
         plaintextPasword = requestData["password"]
         hashedPassword = hashlib.sha256(plaintextPasword.encode("utf-8")).hexdigest()
-        firstName = requestData["fname"]
-        lastName = requestData["lname"]
+        firstName = requestData["firstName"]
+        lastName = requestData["lastName"]
 
         try:
             with connection.cursor() as cursor:
-                query = "INSERT INTO person (username, password, fname, lname) VALUES (%s, %s, %s, %s)"
+                query = "INSERT INTO person (username, password, firstName, lastName) VALUES (%s, %s, %s, %s)"
                 cursor.execute(query, (username, hashedPassword, firstName, lastName))
         except pymysql.err.IntegrityError:
             error = "%s is already taken." % (username)
@@ -394,10 +382,10 @@ def upload_image():
     if request.files:
         requestData = request.form
         caption = requestData["caption"]
+        username = session["username"]
         allFollowers = 1
         if "allfollowers" not in requestData:
             allFollowers = 0
-        username = session["username"]
         image_file = request.files.get("imageToUpload", "")
         image_name = image_file.filename
         filepath = os.path.join(IMAGES_DIR, image_name)
@@ -406,10 +394,10 @@ def upload_image():
         with connection.cursor() as cursor:
             cursor.execute(query, (time.strftime('%Y-%m-%d %H:%M:%S'), image_name, str(allFollowers),caption, username))
         message = "Image has been successfully uploaded."
-        return render_template("upload.html", message=message)
+        return render_template("upload.html", message=message,req=requestData, profile=username)
     else:
         message = "Failed to upload image."
-        return render_template("upload.html", message=message)
+        return render_template("upload.html", message=message, req=requestData, profile=username)
 
 app.secret_key = "super secret key"
 if __name__ == "__main__":

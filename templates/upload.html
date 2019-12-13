@@ -14,10 +14,19 @@
         <input
           type="checkbox"
           name="allfollowers"
-          value="allfollowers"
+          value=1
           checked
         />
-        <label for="allfollowers">All Followers</label>
+        <label for="allfollowers" value=1>All Followers can see my picture</label>
+        <br />
+        Or
+        <br />
+        <form method="post" action="/uploadImage">
+                Enter the friend groups you want to share this picture with (separated by commas)
+                <br />
+                <input type="text" name="friendgroups" placeholder="Enter friend groups" required/>
+                <button type="submit" name="poster" value="{{profile}}">Share</button>
+        </form>
         <br />
         <input type="submit" value="Upload" />
       </form>
