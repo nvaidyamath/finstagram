@@ -19,9 +19,23 @@
         gave a rating of : {{like.rating}}
         </h1>
         {% endfor %}
+        <div class="boxed">
+          Comments:
+        </div>
+        <form action="/comment" method="post">
+                <input type="text" name="comment" placeholder="Enter a comment" required/>
+                <button type="submit" name="photoID" value="{{photo[0].photoID}}">Comment</button>
+        </form>
+        <div>
+          {% for comment in comments %}
+          =====
+          {{comment['comment']}}
+          ====
+          Commented by: {{comment['commentedBy']}}
 
+          {% endfor %}
 
-
+        </div>
     </div>
     <a href="/">Go back</a>
   </body>

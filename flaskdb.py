@@ -44,7 +44,33 @@ def home():
 @login_required
 def upload():
     return render_template("upload.html")
+@app.route("/comment", methods=["GET","POST"])
+@login_required
+def comment():
+    if request.form:
+        requestData = request.form
+        profile = session["username"]
+        photoID = requestData["photoID"]
+        comment = requestData["comment"]
 
+        query = "SELECT DISTINCT photoID FROM Comments WHERE photoID="+str(photoID)+""
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            data = cursor.fetchall()
+            cursor.close()
+        if len(data)!=0:
+            query = "INSERT INTO Comments (`photoID`, `commentedBy`, `comment`) VALUES ('"+str(photoID)+"', '"+str(profile)+"', '"+str(comment)+"')"
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+            return redirect(url_for('photoInfo', photoID= photoID))
+        else:
+            query = "INSERT INTO Comments (`photoID`, `commentedBy`, `comment`) VALUES ('"+str(photoID)+"', '"+str(profile)+"', '"+str(comment)+"')"
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+
+            return redirect(url_for('photoInfo', photoID= photoID))
+
+    return render_template("photoInfo.html")
 @app.route("/like", methods=["GET","POST"])
 @login_required
 def like():
@@ -103,6 +129,7 @@ def images():
     query = "DROP VIEW myCloseGroups, myFollowers"
     cursor.execute(query)
     cursor.close()
+
     return render_template("images.html",images=data)
 
 @app.route("/photoInfo/<int:photoID>", methods=["GET"])
@@ -147,7 +174,15 @@ def photoInfo(photoID):
     likes=cursor.fetchall()
     cursor.close()
 
-    return render_template("photoInfo.html", photoID=photoID, photo=picture, name=names, tagged=names_tagged, likes=likes)
+    #query to get all the comments
+    cursor = connection.cursor()
+    query = "SELECT comment, commentedBy FROM Comments WHERE photoID="+str(photoID)
+    cursor.execute(query)
+    comments = cursor.fetchall()
+    cursor.close()
+    render_template("images.html", profile=session["username"])
+
+    return render_template("photoInfo.html", photoID=photoID, photo=picture, name=names, tagged=names_tagged, likes=likes, comments=comments)
 
 @app.route("/follow", methods=["GET"])
 @login_required
@@ -203,7 +238,7 @@ def unfollow():
     for follow in followed:
         followed_list.append(follow['username_followed'])
     if to_follow != None and to_follow in users_list and to_follow in followed_list:
-        #query to insert pending follow request
+        #query to delete from follows
         cursor = connection.cursor()
         query = "DELETE FROM `Follow` WHERE `Follow`.`username_followed` = '"+str(to_follow)+"' AND `Follow`.`username_follower` = '"+str(follower)+"'"
         cursor.execute(query)
